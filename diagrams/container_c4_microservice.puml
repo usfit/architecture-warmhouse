@@ -1,0 +1,129 @@
+@startuml
+title Warmhouse Container C4 Diagram
+
+' Помощь некронки в форматировании диаграммы
+top to bottom direction
+skinparam linetype polyline
+skinparam nodesep 80
+skinparam ranksep 100
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "Пользователь", "Управляет домом через веб и мобильное приложение")
+System_Ext(devices, "Устройства", "Датчики, реле, лампы, ворота, камеры")
+System_Ext(video_cloud, "Видеохранилище", "Хранение видеозаписей с камер видеонаблюдения")
+
+System(WarmhouseSystem, "Warmhouse System", "Система, которая управляет теплым домом")
+
+System_Boundary(WarmhouseSystem, "Warmhouse System") {
+
+' Объединение в Boundary с помощью нейронки
+  Boundary(clients, "Клиенты") {
+    Container(web, "Web Application", "React", "Веб-приложение для управления домом")
+    Container(mobile, "Mobile Application", "React Native", "Мобильное приложение для управления домом")
+  }
+
+  Boundary(access, "Вход и пользователи") {
+    Container(api, "API Gateway", "Nginx", "Единая точка входа, маршрутизация, проверка токенов")
+    Container(kc, "Keycloak", "Keycloak", "Аутентификация, выдача токенов")
+    ContainerDb(kc_db, "Keycloak DB", "PostgreSQL")
+    Container(user_service, "User Service", "Go", "Управление пользователями")
+    ContainerDb(user_db, "User DB", "PostgreSQL")
+    ' Легаси добавлено в Boundary с помощью нейронки
+    Container(legacy, "Legacy Monolith", "Go + PostgreSQL", "Старый монолит, выводится из эксплуатации")
+  }
+
+  Boundary(domain, "Доменные сервисы") {
+    Container(heating, "Heating Service", "Go", "Управление отоплением")
+    ContainerDb(heating_db, "Heating DB", "PostgreSQL")
+
+    Container(lighting, "Lighting Service", "Go", "Управление освещением")
+    ContainerDb(lighting_db, "Lighting DB", "PostgreSQL")
+
+    Container(gate, "Gate Service", "Go", "Управление воротами")
+    ContainerDb(gate_db, "Gate DB", "PostgreSQL")
+
+    Container(video, "Video Service", "Go", "Управление видеонаблюдением")
+    ContainerDb(video_db, "Video DB", "PostgreSQL")
+
+    Container(custom, "Custom Scenario Service", "Go", "Пользовательские сценарии")
+    ContainerDb(custom_db, "Custom Scenario DB", "PostgreSQL")
+  }
+
+  Boundary(platform, "Платформа устройств") {
+    Container(device_manager, "Device Manager Service", "Go", "Управление устройствами и каталог устройств")
+    ContainerDb(device_manager_db, "Device Manager DB", "PostgreSQL")
+
+    Container(device_connector, "Device Connector Service", "Go", "Прием сообщений от устройств и отправка команд на устройства")
+
+    Container(telemetry, "Telemetry Service", "Go", "Сбор и анализ телеметрических данных")
+    ContainerDb(telemetry_db, "Telemetry DB", "PostgreSQL")
+
+    ContainerQueue(rabbit, "Брокер сообщений", "RabbitMQ", "События и команды между сервисами")
+    ContainerQueue(mqtt, "MQTT-брокер", "Mosquitto", "Подключение устройств")
+  }
+}
+
+Rel(user, web, "Использует", "HTTPS")
+Rel(user, mobile, "Использует", "HTTPS")
+Rel(web, api, "API-запросы", "HTTPS/REST")
+Rel(mobile, api, "API-запросы", "HTTPS/REST")
+Rel(api, kc, "Проверка токена", "OpenID Connect")
+Rel(kc, kc_db, "Чтение/запись данных", "SQL")
+
+Rel(api, heating, "Управление отоплением", "HTTPS/REST")
+Rel(heating, heating_db, "SQL")
+Rel(heating, device_manager, "Проверка устройства и его принадлежности дому", "HTTPS/REST")
+
+Rel(api, lighting, "Управление освещением", "HTTPS/REST")
+Rel(lighting, lighting_db, "SQL")
+Rel(lighting, device_manager, "Проверка устройств освещения", "HTTPS/REST")
+
+Rel(api, gate, "Управление воротами", "HTTPS/REST")
+Rel(gate, gate_db, "SQL")
+Rel(gate, device_manager, "Проверка устройств ворот", "HTTPS/REST")
+
+Rel(api, video, "Управление видеонаблюдением", "HTTPS/REST")
+Rel(video, video_db, "SQL")
+Rel(video, device_manager, "Проверка устройств видеонаблюдения", "HTTPS/REST")
+
+Rel(api, custom, "Управление пользовательскими сценариями", "HTTPS/REST")
+Rel(custom, custom_db, "SQL")
+Rel(custom, device_manager, "Управление пользовательскими сценариями", "HTTPS/REST")
+
+Rel(api, user_service, "Управление пользователями", "HTTPS/REST")
+Rel(user_service, user_db, "SQL")
+
+Rel(api, device_manager, "Управление устройствами", "HTTPS/REST")
+Rel(device_manager, device_manager_db, "SQL")
+
+Rel(api, telemetry, "Сбор и анализ телеметрических данных", "HTTPS/REST")
+Rel(telemetry, telemetry_db, "SQL")
+
+Rel(devices, mqtt, "Передача данных от устройств", "MQTT")
+Rel(mqtt, devices, "Передача команд на устройства", "MQTT")
+
+Rel(device_connector, mqtt, "Передача команд", "MQTT")
+Rel(mqtt, device_connector, "Показания и состояние устройств", "MQTT")
+Rel(device_connector, rabbit, "Показания и состояние устройств", "AMQP")
+Rel(rabbit, device_connector, "Команды устройствам, устройство добавлено/удалено", "AMQP")
+Rel(device_connector, device_manager, "Протокол и формат устройства", "HTTPS/REST")
+
+Rel(rabbit, heating, "Показания температуры, состояние устройств", "AMQP")
+Rel(heating, rabbit, "Команды на включение/выключение отопления", "AMQP")
+Rel(rabbit, lighting, "Состояние устройств освещения", "AMQP")
+Rel(lighting, rabbit, "Команды на включение/выключение освещения", "AMQP")
+Rel(rabbit, gate, "Состояние устройств ворот", "AMQP")
+Rel(gate, rabbit, "Команды на открытие/закрытие ворот", "AMQP")
+Rel(video, rabbit, "Команды камерам", "AMQP")
+Rel(rabbit, custom, "События для пользовательских сценариев", "AMQP")
+Rel(custom, rabbit, "Команды пользовательских сценариев", "AMQP")
+Rel(rabbit, telemetry, "Показания и состояние устройств", "AMQP")
+Rel(device_manager, rabbit, "Добавление/удаление устройств", "AMQP")
+
+Rel(video, video_cloud, "Хранение видеозаписей", "HTTPS")
+Rel(devices, video, "Передача видеопотока", "RTSP")
+
+Rel(api, legacy, "На время миграции", "HTTPS/REST")
+
+@enduml

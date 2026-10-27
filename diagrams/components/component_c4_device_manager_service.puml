@@ -1,0 +1,33 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+
+title Device Manager Service — диаграмма компонентов
+
+Container(services, "Клиенты и сервисы", "Go", "API Gateway, Heating, Lighting, Gate, Video, Custom Scenario, Device Connector")
+
+Container_Boundary(device_manager, "Device Manager Service") {
+  Component(device_manager_api, "Device Manager API", "Go, Gin", "Принимает REST-запросы")
+  Component(device_manager_registry, "Device Manager Registry", "Go", "Регистрация, удаление, обновление устройств")
+  Component(device_manager_catalog, "Device Manager Catalog", "Go", "Каталог устройств")
+  Component(device_manager_event_publisher, "Device Manager Event Publisher", "Go", "Публикует события в rabbit")
+  Component(device_repository, "Device Repository", "Go", "Доступ к Device DB")
+}
+
+ContainerQueue(rabbit, "Брокер сообщений", "RabbitMQ")
+ContainerDb(device_db, "Device DB", "PostgreSQL")
+
+Rel(services, device_manager_api, "REST-запросы", "HTTPS")
+Rel(device_manager_api, device_manager_registry, "Проверка устройств")
+Rel(device_manager_api, device_manager_catalog, "Получение информации об устройствах, протокол работы")
+Rel(device_manager_registry, device_manager_catalog, "Получение устройства из каталога")
+Rel(device_manager_registry, device_manager_event_publisher, "Публикует события о регистрации/удалении/обновлении устройства")
+Rel(device_manager_registry, device_repository, "Читает/пишет данные")
+Rel(device_manager_catalog, device_repository, "Читает данные")
+Rel(device_manager_event_publisher, rabbit, "Публикует события", "AMQP")
+Rel(device_repository, device_db, "Читает/пишет данные", "SQL")
+
+@enduml

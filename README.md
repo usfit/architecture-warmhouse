@@ -81,15 +81,71 @@
 
 **Диаграмма контейнеров (Containers)**
 
-Добавьте диаграмму.
+![Диаграмма контейнеров](diagrams/png/container_c4_microservice.png)
+
+[Исходник PlantUML](diagrams/container_c4_microservice.puml)
 
 **Диаграмма компонентов (Components)**
 
-Добавьте диаграмму для каждого из выделенных микросервисов.
+- Custom Scenario Service
+
+![Диаграмма компонентов](diagrams/png/component_c4_custom_scenario_service.png)
+
+[Исходник PlantUML](diagrams/components/component_c4_custom_scenario_service.puml)
+
+- Device Connector Service
+
+![Диаграмма компонентов](diagrams/png/component_c4_device_connector_service.png)
+
+[Исходник PlantUML](diagrams/components/component_c4_device_connector_service.puml)
+
+- Device Manager Service
+
+![Диаграмма компонентов](diagrams/png/component_c4_device_manager_service.png)
+
+[Исходник PlantUML](diagrams/components/component_c4_device_manager_service.puml)
+
+- Gate Service
+
+![Диаграмма компонентов](diagrams/png/component_c4_gate_service.png)
+
+[Исходник PlantUML](diagrams/components/component_c4_gate_service.puml)
+
+- Heating Service
+
+![Диаграмма компонентов](diagrams/png/component_c4_heating_service.png)
+
+[Исходник PlantUML](diagrams/components/component_c4_heating_service.puml)
+
+- Lighting Service
+
+![Диаграмма компонентов](diagrams/png/component_c4_lighting_service.png)
+
+[Исходник PlantUML](diagrams/components/component_c4_lighting_service.puml)
+
+- Video Service
+
+![Диаграмма компонентов](diagrams/png/component_c4_video_service.png)
+
+[Исходник PlantUML](diagrams/components/component_c4_video_service.puml)
+
+- Temetry Service
+
+![Диаграмма компонентов](diagrams/png/component_c4_telemetry_service.png)
+
+[Исходник PlantUML](diagrams/components/component_c4_telemetry_service.puml)
+
+- User Service
+
+![Диаграмма компонентов](diagrams/png/component_c4_user_service.png)
+
+[Исходник PlantUML](diagrams/components/component_c4_user_service.puml)
 
 **Диаграмма кода (Code)**
 
-Добавьте одну диаграмму или несколько.
+![Диаграмма компонентов](diagrams/png/code_c4_protocol_adapter_device_connector.png)
+
+[Исходник PlantUML](diagrams/code/code_c4_protocol_adapter_device_connector.puml)
 
 # Задание 3. Разработка ER-диаграммы
 

@@ -1,0 +1,34 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+
+title Telemetry Service — диаграмма компонентов
+
+Container(api, "API Gateway", "Nginx")
+
+Container_Boundary(telemetry, "Telemetry Service") {
+  Component(telemetry_api, "Telemetry API", "Go, Gin", "Принимает REST-запросы")
+  Component(telemetry_consumer, "Telemetry Consumer", "Go", "Получает показания из rabbit")
+  Component(telemetry_writer, "Telemetry Writer", "Go", "Копит и записывает пачкой показания в Telemetry DB")
+  Component(query_service, "Query Service", "Go", "Обрабатывает REST-запросы на получение телеметрии")
+  Component(telemetry_repository, "Telemetry Repository", "Go", "Доступ к Telemetry DB")
+  Component(retention_job, "Retention Job", "Go", "Удаляет старые показания из Telemetry DB")
+}
+
+ContainerQueue(rabbit, "Брокер сообщений", "RabbitMQ")
+ContainerDb(telemetry_db, "Telemetry DB", "PostgreSQL")
+
+Rel(api, telemetry_api, "REST-запросы", "HTTPS")
+Rel(telemetry_api, query_service, "Вызывает")
+Rel(query_service, telemetry_repository, "Получает данные из БД")
+Rel(rabbit, telemetry_consumer, "Показания и состояния устройств", "AMQP")
+Rel(telemetry_consumer, telemetry_writer, "Передает показания")
+Rel(telemetry_writer, telemetry_repository, "Записывает накопленные данные в БД")
+Rel(retention_job, telemetry_repository, "Удаляет старые показания из БД")
+Rel(telemetry_repository, telemetry_db, "Читает/пишет данные", "SQL")
+
+
+@enduml
