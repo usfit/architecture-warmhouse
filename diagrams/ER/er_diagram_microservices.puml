@@ -1,0 +1,197 @@
+@startuml
+
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+
+title ER-диаграмма «Тёплый дом»
+
+
+package "User Service" {
+  entity User {
+    * id : uuid <<PK>>
+    --
+    * name : varchar
+    email : varchar
+    phone : varchar
+    timezone : varchar
+    created_at : timestamp
+  }
+
+  entity House {
+    * id : uuid <<PK>>
+    --
+    * name : varchar
+    address : varchar
+    created_at : timestamp
+  }
+
+  entity Room {
+    * id : uuid <<PK>>
+    --
+    * house_id : uuid <<FK>>
+    * name : varchar
+  }
+
+  entity HouseMember {
+    * house_id : uuid <<FK>>
+    * user_id : uuid <<FK>>
+    --
+    * role : varchar
+    joined_at : timestamp
+  }
+}
+
+package "Device Manager Service" {
+  entity DeviceType {
+    * id : uuid <<PK>>
+    --
+    * name : varchar
+    description : text
+    * protocol : varchar
+    vendor : varchar
+    model : varchar
+    category : varchar
+  }
+
+  entity Device {
+    * id : uuid <<PK>>
+    --
+    * house_id : uuid <<ref>>
+    * type_id : uuid <<FK>>
+    * name : varchar
+    room_id : uuid <<ref>>
+    * serial_number : varchar
+    * status : varchar
+    created_at : timestamp
+  }
+}
+
+package "Telemetry Service" {
+  entity Telemetry {
+    * id : uuid <<PK>>
+    --
+    * device_id : uuid <<ref>>
+    * timestamp : timestamp
+    data : jsonb
+  }
+}
+
+package "Heating Service" {
+  entity HeatingSettings {
+    * id : uuid <<PK>>
+    --
+    * sensor_id : uuid <<ref>>
+    * relay_id : uuid <<ref>>
+    * house_id : uuid <<ref>>
+    target_temp : float
+    mode : varchar
+  }
+}
+
+package "Lighting Service" {
+  entity LightingGroup {
+    * id : uuid <<PK>>
+    --
+    * house_id : uuid <<ref>>
+    * name : varchar
+  }
+
+  entity LightingDeviceGroup {
+    * group_id : uuid <<FK>>
+    * device_id : uuid <<ref>>
+  }
+}
+
+package "Gate Service" {
+  entity GateEvent {
+    * id : bigint <<PK>>
+    --
+    * house_id : uuid <<ref>>
+    * device_id : uuid <<ref>>
+    user_id : uuid <<ref>>
+    * timestamp : timestamp
+    event_type : varchar
+  }
+}
+
+package "Video Service" {
+  entity Record {
+    * id : uuid <<PK>>
+    --
+    * house_id : uuid <<ref>>
+    * device_id : uuid <<ref>>
+    started_at : timestamp
+    ended_at : timestamp
+    * storage_key : varchar
+  }
+}
+
+package "Custom Scenario Service" {
+  entity Scenario {
+    * id : uuid <<PK>>
+    --
+    * house_id : uuid <<ref>>
+    * user_id : uuid <<ref>>
+    * name : varchar
+    description : text
+    * enabled : boolean
+  }
+
+  entity Trigger {
+    * id : uuid <<PK>>
+    --
+    * scenario_id : uuid <<FK>>
+    * device_id : uuid <<ref>>
+    condition : varchar
+  }
+
+  entity Action {
+    * id : uuid <<PK>>
+    --
+    * scenario_id : uuid <<FK>>
+    * device_id : uuid <<ref>>
+    * command : varchar
+    params : jsonb
+  }
+
+  entity ScenarioLog {
+    * id : uuid <<PK>>
+    --
+    * scenario_id : uuid <<FK>>
+    * timestamp : timestamp
+    * status : varchar
+  }
+}
+
+House ||--o{ HouseMember
+User ||--o{ HouseMember
+User ||..o{ Scenario
+User |o..o{ GateEvent
+
+House ||..o{ Device
+House ||..o{ HeatingSettings
+House ||..o{ LightingGroup
+House ||..o{ Scenario
+House ||..o{ GateEvent
+House ||..o{ Record
+House ||--o{ Room
+Room |o..o{ Device
+
+DeviceType ||--o{ Device
+Device ||..o{ LightingDeviceGroup
+Device ||..o{ Telemetry
+Device ||..o{ HeatingSettings
+Device ||..o{ GateEvent
+Device ||..o{ Record
+Device ||..o{ Trigger
+Device ||..o{ Action
+
+Scenario ||--o{ Trigger
+Scenario ||--|{ Action
+Scenario ||--o{ ScenarioLog
+
+LightingGroup ||--o{ LightingDeviceGroup
+
+
+@enduml
