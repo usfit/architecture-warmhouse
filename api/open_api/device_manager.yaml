@@ -1,0 +1,211 @@
+openapi: 3.0.3
+info:
+  title: Device Manager API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+paths:
+  /devices/{deviceId}:
+    get:
+      summary: Получить информацию об устройстве
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Устройство найдено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Device' }
+              examples:
+                sensor:
+                  value: { id: "3fc06118-64fc-4974-bb12-53370e8a303b", houseId: "7ba08138-460c-4941-8027-a20d51cfae84", name: "Датчик в гостиной", roomId: "707b4503-b1ef-4488-bac4-d722c0c00d15", typeId: "707b4503-b1ef-4488-bac4-d722c0c00d15", status: "active", serialNumber: "AASD123456", createdAt: "2026-10-28T12:00:00Z" }
+        '400':
+          description: некорректный deviceId
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples: 
+                invalidIdError:
+                  value: { "code": "INVALID_ID", "message": "deviceId должен быть в формате uuid" }
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples: 
+                notFoundError:
+                  value: { "code": "DEVICE_NOT_FOUND", "message": "Устройство с указанным deviceId не найдено" }
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples: 
+                serverError:
+                  value: { "code": "INTERNAL_SERVER_ERROR", "message": "Произошла внутренняя ошибка сервера" }
+    patch:
+      summary: Обновить информацию об устройстве
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceUpdate' }
+            examples:
+              rename:
+                summary: Переименовать и перенести
+                value: { name: "Датчик в спальне", roomId: "909b4503-b1ef-4488-bac4-d722c0c00d15" }
+      responses:
+        '200':
+          description: Устройство успешно обновлено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Device' }
+              examples:
+                updatedDevice:
+                  value: { id: "3fc06118-64fc-4974-bb12-53370e8a303b", houseId: "7ba08138-460c-4941-8027-a20d51cfae84", name: "Датчик в гостиной", roomId: "707b4503-b1ef-4488-bac4-d722c0c00d15", typeId: "707b4503-b1ef-4488-bac4-d722c0c00d15", status: "active", serialNumber: "AASD123456", createdAt: "2026-10-28T12:00:00Z" }
+        '400':
+          description: Некорректные данные для обновления устройства
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                invalidDataError:
+                  value: { "code": "INVALID_DATA", "message": "Поле status должно принимать значение active, inactive или error" }
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFoundError:
+                  value: { "code": "DEVICE_NOT_FOUND", "message": "Устройство с указанным deviceId не найдено" }
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                serverError:
+                  value: { "code": "INTERNAL_SERVER_ERROR", "message": "Произошла внутренняя ошибка сервера" }
+    delete:
+      summary: Удалить устройство
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Устройство удалено
+        '400':
+          description: Некорректный deviceId
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                invalidIdError:
+                  value: { code: "INVALID_ID", message: "deviceId должен быть в формате uuid" }
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFoundError:
+                  value: { code: "DEVICE_NOT_FOUND", message: "Устройство с указанным deviceId не найдено" }
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                serverError:
+                  value: { code: "INTERNAL_SERVER_ERROR", message: "Произошла внутренняя ошибка сервера" }
+  /devices:
+    post:
+      summary: Создать новое устройство
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceCreate' }
+            examples:
+              newDevice:
+                value: { houseId: "7ba08138-460c-4941-8027-a20d51cfae84", name: "Датчик в гостиной", roomId: "707b4503-b1ef-4488-bac4-d722c0c00d15", typeId: "707b4503-b1ef-4488-bac4-d722c0c00d15", serialNumber: "AASD123456" }
+      responses:
+        '201':
+          description: Устройство успешно создано
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Device' }
+              examples:
+                createdDevice:
+                  value: { id: "3fc06118-64fc-4974-bb12-53370e8a303b", houseId: "7ba08138-460c-4941-8027-a20d51cfae84", name: "Датчик в гостиной", roomId: "707b4503-b1ef-4488-bac4-d722c0c00d15", typeId: "707b4503-b1ef-4488-bac4-d722c0c00d15", status: "active", serialNumber: "AASD123456", createdAt: "2026-10-28T12:00:00Z" }
+        '400':
+          description: Некорректные данные для создания устройства
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                invalidDataError:
+                  value: { "code": "INVALID_DATA", "message": "Поле name обязательно" }
+        '409':
+          description: Устройство с таким serialNumber уже существует
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                conflictError:
+                  value: { "code": "DEVICE_ALREADY_EXISTS", "message": "Устройство с таким serialNumber уже существует" }
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                serverError:
+                  value: { "code": "INTERNAL_SERVER_ERROR", "message": "Произошла внутренняя ошибка сервера" }
+
+components:
+  schemas:
+    Device: 
+      type: object
+      required: [id, houseId, typeId, name, serialNumber, status]
+      properties:
+        id: { type: string, format: uuid }
+        houseId: { type: string, format: uuid }
+        name: { type: string }
+        roomId: { type: string, format: uuid }
+        typeId: { type: string, format: uuid }
+        status: { type: string, enum: ["active", "inactive", "error"] }
+        serialNumber: { type: string }
+        createdAt: { type: string, format: date-time }
+    DeviceCreate:
+      type: object
+      required: [houseId, typeId, name, serialNumber]
+      properties:
+        houseId: { type: string, format: uuid }
+        name: { type: string }
+        roomId: { type: string, format: uuid }
+        typeId: { type: string, format: uuid }
+        serialNumber: { type: string }
+    DeviceUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        roomId: { type: string, format: uuid }
+        status: { type: string, enum: ["active", "inactive", "error"] }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
