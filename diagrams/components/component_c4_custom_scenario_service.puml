@@ -1,0 +1,43 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+
+title Custom Scenario Service — диаграмма компонентов
+
+Container(api, "API Gateway", "Nginx")
+
+Container_Boundary(custom_scenario, "Custom Scenario Service") {
+  Component(custom_scenario_api, "Custom Scenario API", "Go, Gin", "Принимает REST-запросы")
+  Component(controller, "Custom Scenario Controller", "Go", "Бизнес-логика")
+  Component(device_client, "Device Client", "Go", "Связь с Device Manager")
+  Component(event_consumer, "Event Consumer", "Go", "Получает события из rabbit")
+  Component(command_publisher, "Command Publisher", "Go", "Публикует команды в rabbit")
+  Component(trigger_service, "Trigger Service", "Go", "Обрабатывает события и триггеры пользовательских сценариев")
+  Component(action_service, "Action Service", "Go", "Формирует команды устройствам")
+  Component(custom_scenario_repository, "Custom Scenario Repository", "Go", "Доступ к Custom Scenario DB")
+}
+
+Container(device_manager, "Device Manager Service", "Go")
+ContainerQueue(rabbit, "Брокер сообщений", "RabbitMQ")
+ContainerDb(custom_scenario_db, "Custom Scenario DB", "PostgreSQL")
+
+Rel(api, custom_scenario_api, "REST-запросы", "HTTPS")
+Rel(custom_scenario_api, controller, "Принимает запросы и вызывает бизнес-логику")
+Rel(controller, device_client, "Проверка устройств")
+Rel(device_client, device_manager, "Проверка устройства и его принадлежности дому", "HTTPS")
+
+Rel(rabbit, event_consumer, "События для пользовательских сценариев", "AMQP")
+Rel(event_consumer, trigger_service, "Передает событие для обработки")
+Rel(trigger_service, action_service, "Формирует команды устройствам")
+Rel(action_service, command_publisher, "Публикует команды в rabbit")
+Rel(command_publisher, rabbit, "Команды пользовательских сценариев", "AMQP")
+
+Rel(action_service, custom_scenario_repository, "Запись в журнал")
+Rel(trigger_service, custom_scenario_repository, "Поиск пользовательских сценариев")
+Rel(controller, custom_scenario_repository, "Читает/пишет данные")
+Rel(custom_scenario_repository, custom_scenario_db, "Читает/пишет данные", "SQL")
+
+@enduml

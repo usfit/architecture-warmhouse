@@ -1,0 +1,50 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+
+title Video Service — диаграмма компонентов
+
+Container(api, "API Gateway", "Nginx")
+
+Container_Boundary(video, "Video Service") {
+  Component(video_api, "Video API", "Go, Gin", "Принимает REST-запросы")
+  Component(controller, "Video Controller", "Go", "Бизнес-логика")
+  Component(device_client, "Device Client", "Go", "Связь с Device Manager")
+  Component(stream_receiver, "Stream Receiver", "Go", "Принимает видеопоток с камер")
+  Component(stream_translator, "Stream Translator", "Go", "Отдает видеопотомк в формате HLS")
+  Component(recorder, "Recorder", "Go", "Сохраняет записи")
+  Component(cloud_repository, "Cloud Repository", "Go", "Доступ к видеохранилищу")
+  Component(video_repository, "Video Repository", "Go", "Доступ к Video DB")
+  Component(command_publisher, "Command Publisher", "Go", "Публикует команды в rabbit")
+}
+
+System_Ext(cloud_storage, "Облачное хранилище", "S3")
+System_Ext(devices, "Камеры", "IP-камеры видеонаблюдения")
+Container(device_manager, "Device Manager Service", "Go")
+ContainerQueue(rabbit, "Брокер сообщений", "RabbitMQ")
+ContainerDb(video_db, "Video DB", "PostgreSQL")
+
+Rel(api, video_api, "REST-запросы", "HTTPS")
+Rel(video_api, controller, "Вызовы методов")
+Rel(controller, device_client, "Связь с устройствами")
+Rel(controller, video_repository, "Читает данные о видеозаписях")
+Rel(controller, cloud_repository, "Получение видеозаписей")
+Rel(controller, stream_translator, "Запрос видеопотока")
+Rel(controller, command_publisher, "Публикация команд")
+Rel(command_publisher, rabbit, "Команда повернуть камеру/зум", "AMQP")
+
+Rel(device_client, device_manager, "Проверка устройства и его принадлежности дому", "HTTPS")
+Rel(stream_receiver, stream_translator, "Передача видеопотока")
+Rel(devices, stream_receiver, "Видеопоток", "RTSP")
+Rel(stream_translator, api, "Отдает видеопоток в формате HLS")
+Rel(stream_receiver, recorder, "Передача видеопотока")
+Rel(recorder, cloud_repository, "Сохраняет/загружает видеозаписи")
+Rel(cloud_repository, cloud_storage, "Сохраняет видеозаписи", "HTTPS")
+Rel(recorder, video_repository, "Сохраняет метаданные видеозаписей")
+Rel(video_repository, video_db, "Читает/пишет данные", "SQL")
+
+
+@enduml

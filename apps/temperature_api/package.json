@@ -1,0 +1,13 @@
+{
+  "name": "temperature-api",
+  "version": "1.0.0",
+  "description": "Имитация API датчиков температуры для smart_home",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.3.0"
+  }
+}

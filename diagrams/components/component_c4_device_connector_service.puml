@@ -1,0 +1,38 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+
+title Device Connector Service — диаграмма компонентов
+
+Container(mqtt, "MQTT Broker", "Mosquitto")
+Container(device_manager, "Device Manager Service", "Go")
+
+Container_Boundary(device_connector, "Device Connector Service") {
+  Component(mqtt_client, "MQTT Client", "Go", "Подключается к MQTT брокеру")
+  Component(device_adapter_registry, "Device Adapter Registry", "Go", "Выбирает адаптер по протоколу")
+  Component(protocol_adapter, "Protocol Adapter", "Go", "Набор адаптеров для разных протоколов")
+  Component(device_manager_client, "Device Manager Client", "Go", "Связь с Device Manager, кэш")
+  Component(event_publisher, "Event Publisher", "Go", "Публикует показания и состояния в rabbit")
+  Component(command_consumer, "Command Consumer", "Go", "Получает команды из rabbit")
+}
+
+ContainerQueue(rabbit, "Брокер сообщений", "RabbitMQ")
+
+Rel(mqtt, mqtt_client, "Подписка на топики", "MQTT")
+Rel(mqtt_client, device_adapter_registry, "передает сообщение устройства")
+Rel(device_adapter_registry, device_manager_client, "Запрос протокола устройства")
+Rel(device_manager_client, device_manager, "Запрос протокола устройства", "HTTPS")
+Rel(protocol_adapter, event_publisher, "Публикует показания и состояния")
+Rel(event_publisher, rabbit, "Публикует показания и состояния", "AMQP")
+Rel(rabbit, command_consumer, "Получает команды,  устройство добавлено/удалено", "AMQP")
+Rel(command_consumer, device_manager_client, "Сбрасывает кеш устройства, если оно удалено")
+Rel(command_consumer, device_adapter_registry, "Передает команду")
+Rel(device_adapter_registry, protocol_adapter, "Выбирает адаптер по протоколу")
+Rel(protocol_adapter, mqtt_client, "Отправляет команды на устройство")
+Rel(mqtt_client, mqtt, "Публикация команд", "MQTT")
+
+
+@enduml

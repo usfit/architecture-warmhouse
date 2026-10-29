@@ -1,0 +1,156 @@
+asyncapi: 3.1.0
+info:
+  title: Warmhouse Device Events
+  version: 1.0.0
+  description: Асинхронные события устройств через RabbitMQ
+
+servers:
+  rabbitmq:
+    host: rabbitmq:5672
+    protocol: amqp
+    description: Брокер сообщений RabbitMQ
+
+channels:
+  deviceTelemetry:
+    address: device.telemetry
+    description: Показания и состояние устройств в общем формате
+    messages:
+      deviceTelemetry:
+        $ref: '#/components/messages/DeviceTelemetry'
+
+  deviceCommands:
+    address: device.commands
+    description: Команды устройствам
+    messages:
+      deviceCommand:
+        $ref: '#/components/messages/DeviceCommand'
+
+  deviceLifecycle:
+    address: device.lifecycle
+    description: Регистрация и удаление устройств
+    messages:
+      deviceLifecycle:
+        $ref: '#/components/messages/DeviceLifecycle'
+
+operations:
+  publishTelemetry:
+    action: send
+    channel:
+      $ref: '#/channels/deviceTelemetry'
+    summary: Device Connector публикует показания и состояние устройств
+
+  receiveTelemetry:
+    action: receive
+    channel:
+      $ref: '#/channels/deviceTelemetry'
+    summary: Heating, Lighting, Gate, Custom Scenario, Telemetry получают показания и состояние
+
+  sendCommand:
+    action: send
+    channel:
+      $ref: '#/channels/deviceCommands'
+    summary: Heating, Lighting, Gate, Video, Custom Scenario отправляют команды устройствам
+
+  receiveCommand:
+    action: receive
+    channel:
+      $ref: '#/channels/deviceCommands'
+    summary: Device Connector получает команды и передаёт их устройствам
+
+  publishLifecycle:
+    action: send
+    channel:
+      $ref: '#/channels/deviceLifecycle'
+    summary: Device Manager публикует события регистрации и удаления устройств
+
+  receiveLifecycle:
+    action: receive
+    channel:
+      $ref: '#/channels/deviceLifecycle'
+    summary: Device Connector, Custom Scenario, Telemetry получают события жизненного цикла
+
+components:
+  messages:
+    DeviceTelemetry:
+      name: DeviceTelemetry
+      title: Показание или состояние устройства
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeviceTelemetry'
+      examples:
+          - name: temperature
+            summary: Датчик прислал температуру
+            payload:
+              eventId: 909b4503-b1ef-4488-bac4-d722c0c00d15
+              deviceId: 909b4503-b1ef-4488-bac4-d722c0c00d15
+              metric: temperature
+              value: 21.4
+              unit: C
+              timestamp: '2026-10-29T10:00:00Z'
+
+    DeviceCommand:
+      name: DeviceCommand
+      title: Команда устройству
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeviceCommand'
+      examples: 
+        - name: lightOn
+          summary: Включить свет
+          payload:
+            eventId: 909b4503-b1ef-4488-bac4-d722c0c00d15
+            deviceId: 909b4503-b1ef-4488-bac4-d722c0c00d15
+            action: "switch"
+            params:
+              on: true
+            source: lighting
+            timestamp: '2026-10-29T10:00:00Z'
+
+    DeviceLifecycle:
+      name: DeviceLifecycle
+      title: Устройство зарегистрировано или удалено
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeviceLifecycle'
+      examples:
+        - name: delete
+          summary: Устройство удалено
+          payload:
+            eventId: 909b4503-b1ef-4488-bac4-d722c0c00d15
+            type: device.removed
+            deviceId: 909b4503-b1ef-4488-bac4-d722c0c00d15
+            houseId: 909b4503-b1ef-4488-bac4-d722c0c00d15
+            timestamp: '2026-10-29T10:00:00Z'
+
+  schemas:
+    DeviceTelemetry:
+      type: object
+      required: [eventId, deviceId, metric, value, timestamp]
+      properties:
+        eventId: { type: string, format: uuid }
+        deviceId: { type: string, format: uuid }
+        metric: { type: string }
+        value: { type: number }
+        unit: { type: string }
+        timestamp: { type: string, format: date-time }
+
+    DeviceCommand:
+      type: object
+      required: [commandId, deviceId, action, source, timestamp]
+      properties:
+        commandId: { type: string, format: uuid }
+        deviceId: { type: string, format: uuid }
+        action: { type: string }
+        params: { type: object }
+        source: { type: string, enum: [heating, lighting, gate, video, custom_scenario] }
+        timestamp: { type: string, format: date-time }
+
+    DeviceLifecycle:
+      type: object
+      required: [eventId, type, deviceId, houseId, timestamp]
+      properties:
+        eventId: { type: string, format: uuid }
+        type: { type: string, enum: [device.registered, device.removed] }
+        deviceId: { type: string, format: uuid }
+        houseId: { type: string, format: uuid }
+        timestamp: { type: string, format: date-time }

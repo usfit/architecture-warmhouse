@@ -1,0 +1,41 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+
+title Lighting Service — диаграмма компонентов
+
+Container(api, "API Gateway", "Nginx")
+
+Container_Boundary(lighting, "Lighting Service") {
+  Component(lighting_api, "Lighting API", "Go, Gin", "Принимает REST-запросы")
+  Component(controller, "Lighting Controller", "Go", "Бизнес-логика")
+  Component(device_client, "Device Client", "Go", "Связь с Device Manager")
+  Component(command_publisher, "Command Publisher", "Go", "Публикует команды в rabbit")
+  Component(state_consumer, "State Consumer", "Go", "Получает состояние ламп из rabbit")
+  Component(lighting_repository, "Lighting Repository", "Go", "Доступ к Lighting DB")
+  Component(group_manager, "Group Manager", "Go", "Управление группами устройств")
+}
+
+Container(device_manager, "Device Manager Service", "Go")
+ContainerQueue(rabbit, "Брокер сообщений", "RabbitMQ")
+ContainerDb(lighting_db, "Lighting DB", "PostgreSQL")
+
+Rel(api, lighting_api, "REST-запросы", "HTTPS")
+Rel(lighting_api, controller, "Вызывает")
+Rel(controller, device_client, "Проверка устройств")
+Rel(controller, lighting_repository, "Читает/пишет данные")
+Rel(controller, command_publisher, "Команда вкл/выкл света")
+Rel(device_client, device_manager, "Проверка устройства и его принадлежности дому", "HTTPS")
+Rel(command_publisher, rabbit, "Публикует команды", "AMQP")
+Rel(state_consumer, lighting_repository, "Сохраняет состояние")
+Rel(state_consumer, controller, "Фактическое состояние света")
+Rel(rabbit, state_consumer, "Состояние света", "AMQP")
+Rel(lighting_repository, lighting_db, "Читает/пишет данные", "SQL")
+Rel(lighting_api, group_manager, "Вызывает")
+Rel(group_manager, controller, "Команда каждой лампе в группе")
+Rel(group_manager, lighting_repository, "Читает/пишет данные о группах")
+
+@enduml

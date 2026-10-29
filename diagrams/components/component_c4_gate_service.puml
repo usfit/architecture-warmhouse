@@ -1,0 +1,41 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+
+title Gate Service — диаграмма компонентов
+
+Container(api, "API Gateway", "Nginx")
+
+Container_Boundary(gate, "Gate Service") {
+  Component(gate_api, "Gate API", "Go, Gin", "Принимает REST-запросы")
+  Component(controller, "Gate Controller", "Go", "Бизнес-логика")
+  Component(device_client, "Device Client", "Go", "Связь с Device Manager")
+  Component(command_publisher, "Command Publisher", "Go", "Публикует команды в rabbit")
+  Component(state_consumer, "State Consumer", "Go", "Получает состояние из rabbit")
+  Component(gate_repository, "Gate Repository", "Go", "Доступ к Gate DB")
+  ' Предложение нейронки добавить историю открытия в целях требования безопасности
+  Component(history, "History", "Go", "Журнал кто и когда открывал ворота")
+}
+
+Container(device_manager, "Device Manager Service", "Go")
+ContainerQueue(rabbit, "Брокер сообщений", "RabbitMQ")
+ContainerDb(gate_db, "Gate DB", "PostgreSQL")
+
+Rel(api, gate_api, "REST-запросы", "HTTPS")
+Rel(gate_api, controller, "Вызывает")
+Rel(controller, device_client, "Проверка устройств")
+Rel(controller, gate_repository, "Читает/пишет данные")
+Rel(controller, command_publisher, "Команда открыть/закрыть ворота")
+Rel(controller, history, "Записывает историю")
+Rel(history, gate_repository, "Сохраняет записи журнала")
+Rel(gate_api, history, "Запрос журнала")
+Rel(device_client, device_manager, "Проверка устройства и его принадлежности дому", "HTTPS")
+Rel(command_publisher, rabbit, "Публикует команды", "AMQP")
+Rel(state_consumer, gate_repository, "Сохраняет состояние")
+Rel(state_consumer, controller, "Текущее состояние ворот")
+Rel(rabbit, state_consumer, "Состояние ворот", "AMQP")
+Rel(gate_repository, gate_db, "Читает/пишет данные", "SQL")
+@enduml

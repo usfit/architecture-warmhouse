@@ -1,0 +1,55 @@
+@startuml
+title Device Connector — диаграмма кода (Protocol Adapter)
+
+skinparam classAttributeIconSize 0
+
+class MessageHandler {
+  + HandleDeviceMessage(raw []byte)
+  + HandleCommand(cmd DeviceCommand)
+}
+
+class AdapterRegistry {
+  - adapters map[string]Adapter
+  + Get(protocol string) Adapter
+}
+
+interface Adapter {
+  + Normalize(raw []byte) DeviceEvent
+  + EncodeCommand(cmd DeviceCommand) []byte
+}
+
+class ZigbeeAdapter {
+  - protocol string = "zigbee"
+  - baseTopic string = "zigbee2mqtt"
+}
+
+class GenericMqttAdapter {
+  - protocol string = "generic_mqtt"
+  - baseTopic string = "warmhouse/devices"
+}
+
+class DeviceEvent {
+  + DeviceID string
+  + Metric string
+  + Value float64
+}
+
+class DeviceCommand {
+  + DeviceID string
+  + Action string
+}
+
+MessageHandler --> AdapterRegistry : выбирает адаптер
+AdapterRegistry --> Adapter : хранит
+Adapter <|.. ZigbeeAdapter
+Adapter <|.. GenericMqttAdapter
+Adapter ..> DeviceEvent
+Adapter ..> DeviceCommand
+
+note right of Adapter
+  Новый партнёр = новый класс,
+  реализующий Adapter.
+  Остальной код не меняется.
+end note
+
+@enduml
