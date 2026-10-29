@@ -195,3 +195,6 @@ task-*
 
 ### Черновики ###
 drafts/
+
+### Node.js ###
+node_modules/
